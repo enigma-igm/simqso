@@ -75,10 +75,10 @@ def continuum_kcorr(obsBand,restBand,z,alpha_nu=-0.5):
     Parameters
     ----------
     obsBand : str or float
-        Observed band. Can be one of "SDSS-[ugriz]", "CFHT-[gri]", or a
+        Observed band. Can be one of "SDSS-[ugriz]", "CFHT-[gri]", "PanSTARRS-[grizy]", or a
         wavelength in Angstroms.
     restBand : str or float
-        Rest-frame band. Can be one of "SDSS-[ugriz]", "CFHT-[gri]", or a
+        Rest-frame band. Can be one of "SDSS-[ugriz]", "CFHT-[gri]", "PanSTARRS-[grizy]", or a
         wavelength in Angstroms.
     z : float or ndarray
         Emission redshift(s).
@@ -92,8 +92,14 @@ def continuum_kcorr(obsBand,restBand,z,alpha_nu=-0.5):
     '''
     z = np.asarray(z)
     # CFHT: http://www.cfht.hawaii.edu/Science/mswg/filters.html
+    # PanSTARRS: http://iopscience.iop.org/article/10.1088/0004-637X/750/2/99/meta#apj425122s3 Table 4 lambda_eff
+    # For LSST filters a new source is needed! The values are only temporary.
+    # http://svo2.cab.inta-csic.es/svo/theory/fps/index.php?id=LSST/LSST.i&&mode=browse&gname=LSST&gname2=LSST
     effWave = {'SDSS-g':4670.,'SDSS-r':6165.,'SDSS-i':7471.,'SDSS-z':8918,
-               'CFHT-g':4770.,'CFHT-r':6230.,'CFHT-i':7630.}
+               'CFHT-g':4770.,'CFHT-r':6230.,'CFHT-i':7630.,
+               'PanSTARRS-g':4810., 'PanSTARRS-r':6170., 'PanSTARRS-i':7520.,
+               'PanSTARRS-z':8660., 'PanSTARRS-y':9620.,
+               'LSST-g':4730.0, 'LSST-r': 6138.8, 'LSST-i': 7487.4, 'LSST-z': 8668.8}
     try:
         obsWave = float(obsBand)
     except:
@@ -102,7 +108,7 @@ def continuum_kcorr(obsBand,restBand,z,alpha_nu=-0.5):
         restWave = float(restBand)
     except:
         restWave = effWave[restBand]
-    # Following continuum K-corrections given in 
+    # Following continuum K-corrections given in
     #  Richards et al. 2006, AJ 131, 2766
     kcorr = ( -2.5*(1+alpha_nu)*np.log10(1+z) -
                  2.5*alpha_nu*np.log10(restWave/obsWave) )
@@ -184,7 +190,7 @@ class Spectrum(object):
         if np.isscalar(other):
             a2 = other
         else:
-            if ((self.wave.size == other.wave.size) and 
+            if ((self.wave.size == other.wave.size) and
                 (np.max(np.abs(self.wave-other.wave)/self.wave) < 1e-3)):
                 a2 = other.f_lambda
             else:
@@ -211,7 +217,7 @@ class Spectrum(object):
     #
     def setRedshift(self,z):
         '''
-        Set the redshift of the spectrum. *Does not modify the spectrum 
+        Set the redshift of the spectrum. *Does not modify the spectrum
         itself*.
         '''
         self.z = z
@@ -238,7 +244,7 @@ class Spectrum(object):
         self.f_lambda = newFlux(newWave)
     def convolve_restframe(self,g,*args):
         '''
-        Convolves the spectrum with the input function as 
+        Convolves the spectrum with the input function as
         f_lambda' = g(wave/(1+z),f_lambda).
 
         Optional \*args are passed to the convolution function.
@@ -247,7 +253,7 @@ class Spectrum(object):
 
 class TimerLog():
     '''
-    Simple utility for tracking wall time execution for various steps of the 
+    Simple utility for tracking wall time execution for various steps of the
     simulation.
     '''
     def __init__(self):
@@ -260,11 +266,10 @@ class TimerLog():
         self.__call__('Finish')
         stages = self.stages[1:]
         times = np.array(self.times[1:]) - self.times[0]
-        #itimes = np.concatenate([[0,],np.diff(times)]) 
+        #itimes = np.concatenate([[0,],np.diff(times)])
         itimes = np.diff(self.times)
         ftimes = itimes / times[-1]
         print('%20s %8s %8s %8s' % ('stage','time','elapsed','frac'))
         for t in zip(stages,itimes,times,ftimes):
             print('%20s %8.3f %8.3f %8.3f' % t)
         print()
-

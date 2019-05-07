@@ -232,6 +232,198 @@ class allwisePhotoUnc(object):
         sig_m = np.clip(sig_m,0.02,np.inf)
         return sig_m * f_nmgy / 1.0857
 
+# unWISE photometric uncertainty functions (added April 17th 2019 by JT
+# Schindler)
+# Compared to the other ones, these directly use the calculated fluxes in
+# nanomaggies
+# Disclaimer: These flux errors are based on unWISE Stripe 82 data and
+# might not be useful for the galactic plane
+
+# AB mag version
+_unwise_phot_pars = {
+    'a':{'W1':0.20206436, 'W2': 4.35351555e-01},
+    'b':{'W1': 0.11505964, 'W2': 9.35033234e-02},
+    'c':{'W1': 0.1444974, 'W2': 4.83102906e-01},
+    'd':{'W1': 12.98079923, 'W2': 1.00483359e+02},
+    'a_lo':{'W1': 0.20370591, 'W2':  0.4236139},
+    'b_lo':{'W1': 0.09542969, 'W2': 0.0972767},
+    'c_lo':{'W1': 0.20835097, 'W2': 0.44459558},
+    'd_lo':{'W1': 16.5664579, 'W2': 83.41207598},
+    'a_hi':{'W1': 0.20433164, 'W2': 4.13220515e-01},
+    'b_hi':{'W1': 0.09899131, 'W2': 9.90261430e-02},
+    'c_hi':{'W1': 0.19675113, 'W2': 4.41065697e-01},
+    'd_hi':{'W1': 20.31254652, 'W2': 1.06579650e+02},
+    'ABtoVega':{'W1':2.699,'W2':3.339,'W3':5.174,'W4':6.620},
+}
+
+
+
+def phot_err_func(x, a, b, c, d):
+	return a + b * np.sqrt(x * c + d)
+
+
+class unwisePhotoUnc(object):
+	def __init__(self, b):
+		self.band = b
+		self.a = _unwise_phot_pars['a'][b]
+		self.b = _unwise_phot_pars['b'][b]
+		self.c = _unwise_phot_pars['c'][b]
+		self.d = _unwise_phot_pars['d'][b]
+		self.a_lo = _unwise_phot_pars['a_lo'][b]
+		self.b_lo = _unwise_phot_pars['b_lo'][b]
+		self.c_lo = _unwise_phot_pars['c_lo'][b]
+		self.d_lo = _unwise_phot_pars['d_lo'][b]
+		self.a_hi = _unwise_phot_pars['a_hi'][b]
+		self.b_hi = _unwise_phot_pars['b_hi'][b]
+		self.c_hi = _unwise_phot_pars['c_hi'][b]
+		self.d_hi = _unwise_phot_pars['d_hi'][b]
+		self.vegaConv = _unwise_phot_pars['ABtoVega'][b]
+
+	def __call__(self, f_nmgy):
+		s = f_nmgy.shape
+
+		# convert f_nmgy(ab) to f_nmgy(vega)
+		f_nmgy = f_nmgy * 10 ** (-0.4 * (-self.vegaConv))
+
+		# fit to median flux error
+		sig_f = phot_err_func(f_nmgy, self.a, self.b, self.c, self.d)
+
+		# calculating lower and upper 1-sigma ranges on the flux error
+		sig_f_lo = phot_err_func(f_nmgy, self.a_lo, self.b_lo, self.c_lo,
+								 self.d_lo)
+		sig_f_hi = phot_err_func(f_nmgy, self.a_hi, self.b_hi, self.c_hi,
+								 self.d_hi)
+		# sampling the lower and upper flux error distributions
+		lo = np.abs(np.random.normal(scale=1.0 * (sig_f - sig_f_lo), size=s))
+		hi = np.abs(np.random.normal(scale=1.0 * (sig_f_hi - sig_f), size=s))
+		# Randomly (with 50% probability for upper and lower)
+		# assigning a width to the median flux error
+		x = np.random.random(size=s)
+		sig_f += np.choose(x < 0.5, [hi, -lo])
+
+		# returns the flux error according to the flux in nanomaggies
+		return sig_f
+
+
+_vhs_phot_pars = {
+	'a': {'J': 3.91643235e-02, 'K': 3.07582631e-02},
+	'a_lo': {'J': 3.59169233e-02, 'K': 2.58237170e-02, },
+	'a_hi': {'J': 3.97970589e-02, 'K': 3.97046265e-02, },
+	'b': {'J': 8.16645695e-01, 'K': 8.00970418e-01},
+	'b_lo': {'J': 8.33909820e-01, 'K': 1.01595882e+00, },
+	'b_hi': {'J': 1.19999131e+00, 'K': 5.47209268e-01, },
+	'c': {'J': 8.12484898e+01, 'K': 8.21096486e+01},
+	'c_lo': {'J': 5.80885209e+01, 'K': 8.56731327e+01, },
+	'c_hi': {'J': 1.28026269e+02, 'K': 7.49011435e+01, },
+
+	'ABtoVega': {'J': 0.916, 'K': 1.827},
+}
+
+
+def phot_err_func_vhs(x, b, c, d):
+	return b * np.sqrt(x * c + d)
+
+
+class vhsPhotoUnc(object):
+	""" The VHS photometry is somewhat inhomogeneous in its error properties.
+	 Thus our error model cannot adequately represent the different depths.
+	  J(AB) < 14 : errors are underestimated
+	  J(AB) > 22.5 : errors are overestimated
+	  J(AB) > 21.5 : error spread is too broad
+
+	  K(AB) > 22.5 : errors are overestimated
+
+	  (added on May 7th by JT Schindler)"""
+
+	def __init__(self, b):
+		self.band = b
+		self.a = _vhs_phot_pars['a'][b]
+		self.a_lo = _vhs_phot_pars['a_lo'][b]
+		self.a_hi = _vhs_phot_pars['a_hi'][b]
+		self.b = _vhs_phot_pars['b'][b]
+		self.b_lo = _vhs_phot_pars['b_lo'][b]
+		self.b_hi = _vhs_phot_pars['b_hi'][b]
+		self.c = _vhs_phot_pars['c'][b]
+		self.c_lo = _vhs_phot_pars['c_lo'][b]
+		self.c_hi = _vhs_phot_pars['c_hi'][b]
+		self.vegaConv = _vhs_phot_pars['ABtoVega'][b]
+
+	def __call__(self, f_nmgy):
+		s = f_nmgy.shape
+
+		# fit to median flux error
+		sig_f = phot_err_func_vhs(f_nmgy, self.a, self.b, self.c)
+
+		# calculating lower and upper 1-sigma ranges on the flux error
+		sig_f_lo = phot_err_func_vhs(f_nmgy, self.a_lo, self.b_lo, self.c_lo)
+		sig_f_hi = phot_err_func_vhs(f_nmgy, self.a_hi, self.b_hi, self.c_hi)
+		# sampling the lower and upper flux error distributions
+		lo = np.abs(np.random.normal(scale=1.0 * (sig_f - sig_f_lo), size=s))
+		hi = np.abs(np.random.normal(scale=1.0 * (sig_f_hi - sig_f), size=s))
+		# Randomly (with 50% probability for upper and lower)
+		# assigning a width to the median flux error
+		x = np.random.random(size=s)
+		sig_f += np.choose(x < 0.5, [hi, -lo])
+
+		# returns the flux error according to the flux in nanomaggies
+		return sig_f
+
+
+def phot_err_func_des(x, b, c, d):
+    return b * np.sqrt(x * c + d)
+
+_des_phot_pars = {
+  'a':{'Y':3.31680680e-02, 'z':7.09471586e-03},
+  'a_lo':{'Y':4.20979994e-02, 'z':0.02960503 },
+  'a_hi':{'Y':3.97028685e-02, 'z':1.29752830e-02, },
+  'b':{'Y':3.97499533e-01, 'z':2.11597580e+00},
+  'b_lo':{'Y':2.24561584e-01, 'z':0.09037421 },
+  'b_hi':{'Y':3.00686511e-01, 'z':1.39335946e+00 },
+  'c':{'Y':3.03458372e+02, 'z':6.89729357e+02},
+  'c_lo':{'Y':1.15632183e+02, 'z':24.70625448 },
+  'c_hi':{'Y':4.19397683e+02, 'z':4.37006613e+02},
+}
+
+
+class DESPhotoUnc(object):
+    """ The DES error function for the z/Y band is an approximation to the
+    real error properties. It somewhat underestimates the error between
+    20-22.5 mag and overestimates the error above these values. It is
+    accurate towards brighter magnitudes. (added May 7th 2019 by JT
+    Schindler) """
+
+    def __init__(self, b):
+        self.band = b
+        self.a = _des_phot_pars['a'][b]
+        self.a_lo = _des_phot_pars['a_lo'][b]
+        self.a_hi = _des_phot_pars['a_hi'][b]
+        self.b = _des_phot_pars['b'][b]
+        self.b_lo = _des_phot_pars['b_lo'][b]
+        self.b_hi = _des_phot_pars['b_hi'][b]
+        self.c = _des_phot_pars['c'][b]
+        self.c_lo = _des_phot_pars['c_lo'][b]
+        self.c_hi = _des_phot_pars['c_hi'][b]
+
+    def __call__(self, f_nmgy):
+        s = f_nmgy.shape
+
+        # fit to median flux error
+        sig_f = phot_err_func_des(f_nmgy, self.a, self.b, self.c)
+
+        # calculating lower and upper 1-sigma ranges on the flux error
+        sig_f_lo = phot_err_func_des(f_nmgy, self.a_lo, self.b_lo, self.c_lo)
+        sig_f_hi = phot_err_func_des(f_nmgy, self.a_hi, self.b_hi, self.c_hi)
+        # sampling the lower and upper flux error distributions
+        lo = np.abs(np.random.normal(scale=1.0 * (sig_f - sig_f_lo), size=s))
+        hi = np.abs(np.random.normal(scale=1.0 * (sig_f_hi - sig_f), size=s))
+        # Randomly (with 50% probability for upper and lower)
+        # assigning a width to the median flux error
+        x = np.random.random(size=s)
+        sig_f += np.choose(x < 0.5, [hi, -lo])
+
+        # returns the flux error according to the flux in nanomaggies
+        return sig_f
+
 _tmass_phot_pars = {
     'x0':{'J':14.47706168, 'H':13.74112897,
      'K':13.10023926 },
@@ -269,6 +461,68 @@ class tmassPhotoUnc(object):
         sig_m = np.exp(sig_m)
         return sig_m * f_nmgy /1.0857
 
+
+# Included PanSTARRS photometric uncertainty (Jinyi Yang, Feige Wang)
+
+ # PS1 photometric model
+
+_ps1_phot_pars = {
+  'n':{'g':3.03067231e-10, 'r':3.51954013e-10,'i':4.02844834e-10, 'z':7.21769276e-10, 'y':1.75281748e-09 },
+  'n_lo':{'g':2.64619046e-10, 'r':3.10547692e-10,'i':3.56529614e-10,'z':6.20530326e-10,'y':1.52490945e-09},
+  'n_hi':{'g':3.41515417e-10, 'r':3.93360334e-10,'i':4.49160054e-10,'z':8.23008227e-10,'y':1.98072551e-09},
+  'a':{'g':3.12976920e-03, 'r':2.64537399e-03,'i':2.47470270e-03, 'z':3.00356517e-03,'y':3.69861972e-03},
+  'a_lo':{'g':3.00755710e-03, 'r':2.51321863e-03,'i':2.37777787e-03,'z':2.96226831e-03,'y':3.62367433e-03},
+  'a_hi':{'g':3.25198130e-03, 'r':2.77752935e-03,'i':2.57162754e-03,'z':3.04486204e-03,'y':3.77356511e-03},
+}
+
+
+class ps1PhotoUnc(object):
+
+    def __init__(self,b):
+
+        self.band = b
+        self.n = _ps1_phot_pars['n'][b]
+        self.n_lo = _ps1_phot_pars['n_lo'][b]
+        self.n_hi = _ps1_phot_pars['n_hi'][b]
+        self.a = _ps1_phot_pars['a'][b]
+        self.a_lo = _ps1_phot_pars['a_lo'][b]
+        self.a_hi = _ps1_phot_pars['a_hi'][b]
+
+    def __call__(self,f_nmgy):
+
+        ABMag = nmgy2abmag(self.band,f_nmgy)
+        s = f_nmgy.shape
+        sig_m = 1.0857*self.n/(10**(-0.4*ABMag)) #/ np.sqrt(np.random.randint(1,5,size=s))
+
+        try:
+            # this is legacy code for approximating the depth variations
+            # over the sky, not really sure how valid it is
+            sig_m_lo = 1.0857*self.n_lo/(10**(-0.4*ABMag)) #/ np.sqrt(np.random.randint(1,5,size=s))
+            sig_m_hi = 1.0857*self.n_hi/(10**(-0.4*ABMag)) #/ np.sqrt(np.random.randint(1,5,size=s))
+
+            lo = np.abs(np.random.normal(scale=1.0*(sig_m-sig_m_lo),size=s))
+            hi = np.abs(np.random.normal(scale=1.0*(sig_m_hi-sig_m),size=s))
+
+            #
+            lo = np.abs(np.random.normal(scale=np.max([np.abs(sig_m-sig_m_lo),1e-3]),size=s))
+            #
+            hi = np.abs(np.random.normal(scale=np.max([np.abs(sig_m_hi-sig_m),1e-3]),size=s))
+
+            x = np.random.random(size=s)
+
+            sig_m += np.choose(x<0.5,[hi,-lo])
+
+        except:
+
+            pass
+
+        sig_m = np.clip(sig_m,0.0,np.inf) #/np.sqrt(np.random.randint(1,6,size=s))
+
+        return sig_m * f_nmgy / 1.0857
+
+
+
+
 supported_photo_systems = {
   'SDSS':{
     'Legacy':{'bands':'ugriz','magSys':'asinh','uncMap':sdssPhotoUnc},
@@ -283,6 +537,7 @@ supported_photo_systems = {
   },
   'WISE':{
     'AllWISE':{'bands':['W1','W2'],'magSys':'AB','uncMap':allwisePhotoUnc},
+	'unWISE':{'bands':['W1','W2'],'magSys':'AB','uncMap':unwisePhotoUnc},
   },
   'TMASS':{
     'Allsky':{'bands':['J','H','K'],'magSys':'AB','uncMap':tmassPhotoUnc},
@@ -297,12 +552,25 @@ supported_photo_systems = {
   'LSST':{
     'Wide':{'bands':'ugrizy','magSys':'AB','uncMap':None},
   },
+  'PanSTARRS':{
+    'PS1':{'bands':'grizy','magSys':'AB','uncMap':ps1PhotoUnc}
+  },
+  'GaiaMA18': {
+    'Gaia': {'bands': ['G', 'GBPb', 'GBPf', 'GRP'], 'magSys': 'AB',
+			 'uncMap':None}
+  },
+  'VISTA':{
+    'VISTA':{'bands':['Z','Y','J','H','K'],'magSys':'AB',
+			 'uncMap':None},
+	'VHS':{'bands':['J','K'],'magSys':'AB',
+			 'uncMap':vhsPhotoUnc},
+  },
 }
 
 # should find a better container / organization for this
 def load_photo_map(photSystems):
     bandpasses = OrderedDict()
-    filterdata = fits.open(os.path.join(datadir,'filtercurves.fits'))
+    filterdata = fits.open(os.path.join(datadir, 'filtercurves.fits'))
     mapObserved = {}
     magSys = {}
     filtName = {} # ugh
@@ -335,6 +603,9 @@ def load_photo_map(photSystems):
                 mapObserved[bpName] = photSys['uncMap'](band)
             magSys[bpName] = photSys['magSys']
             filtName[bpName] = bpExt
+
+    print (mapObserved)
+
     return dict(bandpasses=bandpasses,mapObserved=mapObserved,
                 magSys=magSys,filtName=filtName)
 
@@ -418,4 +689,3 @@ class LazyPhotoMap(object):
     def getBandpasses(self):
         self.__loadup()
         return self.photoMap['bandpasses']
-
