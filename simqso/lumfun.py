@@ -145,6 +145,15 @@ class PolyEvolParam(QlfEvolParam):
         return np.polyval(par,z-self.z0)
 
 
+class ChebyshevEvolParam(QlfEvolParam):
+    '''
+        A luminosity function parameter that evolves with redshift according
+        to a chebyshev function.
+        '''
+    def eval_at_z(self, z, par=None):
+        par = self._extract_par(par)
+        return np.polynomial.chebyshev.chebval(z-self.z0, c=par)
+
 class LuminosityFunction(object):
     def __init__(self,cosmo=None):
         self.cosmo = cosmo
@@ -354,7 +363,7 @@ class DoublePowerLawLF(LuminosityFunction):
         if True:
             # until I get something more flexible in here
             # ... use the power-law conversion in .spectrum
-            break_wave = kwargs.get('break_wave',1100.)
+            break_wave = kwargs.get('break_wave', 1100.)
             alpha1 = kwargs.get('alpha1',-0.5)
             alpha2 = kwargs.get('alpha2',-1.5)
             #print 'warning: using SED model (%.2f,%.1f,%.2f)' % \

@@ -134,7 +134,7 @@ class SelectionFunction(SimGridOutput):
                           self.qsoGrid.photoBands)
         self.gridVals = s.reshape(self.qsoGrid.gridShape)
     def _collapse_grid(self):
-        return np.sum(self.gridVals,axis=-1) / float(self.nPerBin)
+        return np.sum(self.gridVals, axis=-1) / float(self.nPerBin)
     def _grid_binstats(self,mag,z,vals,bins):
         g = binned_statistic_2d(mag,z,vals,'sum',bins)[0]
         n = binned_statistic_2d(mag,z,vals,'count',bins)[0]

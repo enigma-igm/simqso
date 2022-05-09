@@ -99,7 +99,9 @@ def continuum_kcorr(obsBand,restBand,z,alpha_nu=-0.5):
                'CFHT-g':4770.,'CFHT-r':6230.,'CFHT-i':7630.,
                'PanSTARRS-g':4810., 'PanSTARRS-r':6170., 'PanSTARRS-i':7520.,
                'PanSTARRS-z':8660., 'PanSTARRS-y':9620.,
-               'LSST-g':4730.0, 'LSST-r': 6138.8, 'LSST-i': 7487.4, 'LSST-z': 8668.8}
+               'LSST-g':4730.0, 'LSST-r': 6138.8, 'LSST-i': 7487.4, 'LSST-z':
+                   8668.8, 'LSST-y':9711.5, 'UKIDSS-J': 12500, 'VISTA-J':
+                   12540, 'DECAM-z': 9260}
     try:
         obsWave = float(obsBand)
     except:

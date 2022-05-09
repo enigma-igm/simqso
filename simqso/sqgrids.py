@@ -1446,6 +1446,8 @@ def generateBEffEmissionLines(M1450, **kwargs):
     if verbose > 0:
         print('loading emission line template {}'.format(trendFn))
     lineCatalog = Table.read(os.path.join(datadir, trendFn + '.fits'))
+    # added line below
+    lineCatalog.convert_bytestring_to_unicode()
     for line, scl in kwargs.get('scaleEWs', {}).items():
         try:
             i = np.where(lineCatalog['name'] == line)[0][0]
