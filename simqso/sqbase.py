@@ -95,13 +95,18 @@ def continuum_kcorr(obsBand,restBand,z,alpha_nu=-0.5):
     # PanSTARRS: http://iopscience.iop.org/article/10.1088/0004-637X/750/2/99/meta#apj425122s3 Table 4 lambda_eff
     # For LSST filters a new source is needed! The values are only temporary.
     # http://svo2.cab.inta-csic.es/svo/theory/fps/index.php?id=LSST/LSST.i&&mode=browse&gname=LSST&gname2=LSST
+    # Euclid filter curves are coming from http://svo2.cab.inta-csic.es/svo/theory/fps3/index.php?mode=browse&gname=Euclid&gname2=NISP&asttype=
+    # These are approximate and from a ESA restricted website, should be
+    # updated with published values at some point. Not that there is a strong
+    # discrepancy to the values in the python package speclite.
     effWave = {'SDSS-g':4670.,'SDSS-r':6165.,'SDSS-i':7471.,'SDSS-z':8918,
                'CFHT-g':4770.,'CFHT-r':6230.,'CFHT-i':7630.,
                'PanSTARRS-g':4810., 'PanSTARRS-r':6170., 'PanSTARRS-i':7520.,
                'PanSTARRS-z':8660., 'PanSTARRS-y':9620.,
                'LSST-g':4730.0, 'LSST-r': 6138.8, 'LSST-i': 7487.4, 'LSST-z':
                    8668.8, 'LSST-y':9711.5, 'UKIDSS-J': 12500, 'VISTA-J':
-                   12540, 'DECAM-z': 9260}
+                   12540, 'DECAM-z': 9260,
+               'Euclid-J':13433.64, 'Euclid-Y':10732.86, 'Euclid-H':17440.04, }
     try:
         obsWave = float(obsBand)
     except:
