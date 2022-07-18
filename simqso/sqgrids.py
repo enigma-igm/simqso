@@ -19,7 +19,8 @@ from astropy.constants import sigma_sb, b_wien
 try:
     from astropy.modeling.blackbody import blackbody_lambda
 except ImportError:
-    from astropy.analytic_functions import blackbody_lambda
+    # from astropy.analytic_functions import blackbody_lambda
+	from astropy.modeling.models import BlackBody
 
 from .sqbase import datadir, Spectrum
 from . import dustextinction
@@ -820,7 +821,11 @@ class DustBlackbodyVar(ContinuumVar, MultiDimVar):
             rfwv2 = np.logspace(np.log10(lampeak), np.log10(lam2), npts)
             rfwave = np.concatenate([(lampeak - dwv1)[::-1], rfwv2])
             self.rfwave[Tdust] = rfwave
-            bvals = blackbody_lambda(self.rfwave[Tdust], Tdust).value
+            # bvals = blackbody_lambda(self.rfwave[Tdust], Tdust).value
+            # Using new BlackBody class from astropy
+            bb_lam = BlackBody(Tdust * u.K,
+                     scale=1.0 * u.erg / (u.cm ** 2 * u.AA * u.s * u.sr))
+            bvals = bb_lam(self.rfwave[Tdust])
             self.Blam[Tdust] = interp1d(self.rfwave[Tdust], bvals,
                                         kind='cubic')
         Blam = self.Blam[Tdust]
