@@ -569,9 +569,9 @@ supported_photo_systems = {
     'VHS':{'bands':['J','K'],'magSys':'AB',
              'uncMap':vhsPhotoUnc},
   },
-    'Euclid':{
-        'Euclid':{'bands':['V','Y','J','H'],'magSys':'AB',
-             'uncMap': None}
+    'Euclid': {
+        'Euclid': {'bands': ['V', 'Y', 'J', 'H'], 'magSys': 'AB',
+				   'uncMap': None}
     }
 }
 
