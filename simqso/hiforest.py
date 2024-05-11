@@ -14,6 +14,8 @@ from astropy.table import Table,vstack,hstack
 
 from .sqbase import datadir,fixed_R_dispersion,resample
 
+from IPython import embed
+
 # shorthands
 exp,sqrt,log = np.exp,np.sqrt,np.log
 c_kms = const.c/1e3
@@ -355,7 +357,11 @@ class IGMTransmissionGrid(object):
         if not np.allclose(dloglam,dloglam[0]):
             raise ValueError("Must have constant dloglam")
         specR = dloglam[0]**-1
-        self.nRebin = np.int(np.ceil(forestRmin/specR))
+        self.nRebin = np.int32(np.ceil(forestRmin/specR))
+        print("Original resolution: R={}".format(specR))
+        print("Rebinning spectra by a factor of {}".format(self.nRebin))
+        
+        # self.nRebin = 1 # hard-coded for now # added by Daming
         self.forestR = specR * self.nRebin
         # go a half pixel below the minimum wavelength
         wavemin = exp(logwave[0]-0.5/specR)
