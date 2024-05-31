@@ -258,8 +258,9 @@ _unwise_phot_pars = {
 
 
 
-def phot_err_func(x, a, b, c, d):
-    return a + b * np.sqrt(x * c + d)
+
+
+
 
 
 class unwisePhotoUnc(object):

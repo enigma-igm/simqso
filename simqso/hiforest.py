@@ -360,8 +360,7 @@ class IGMTransmissionGrid(object):
         self.nRebin = np.int32(np.ceil(forestRmin/specR))
         print("Original resolution: R={}".format(specR))
         print("Rebinning spectra by a factor of {}".format(self.nRebin))
-        
-        # self.nRebin = 1 # hard-coded for now # added by Daming
+
         self.forestR = specR * self.nRebin
         # go a half pixel below the minimum wavelength
         wavemin = exp(logwave[0]-0.5/specR)
