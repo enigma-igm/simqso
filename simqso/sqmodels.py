@@ -114,6 +114,71 @@ McG13hiz_model = {
             'bsig':24.0},
 }
 
+zpivot = 5.6
+DoublePowerLaw_model = {
+ 'forest1':{'zrange':(1.5,zpivot),
+            'logNHrange':(12.0,14.5),
+            'gamma':3.5,
+            'beta':1.50,
+            'N0':8.5 * 1.1,
+            'brange':(10.,100.),
+            'bsig':24.0},
+ 'forest1_eor':{'zrange':(zpivot,10.1),
+            'logNHrange':(12.0,14.5),
+            'gamma':3.5,
+            'beta':1.50,
+            'N0':8.5 * 1.1,
+            'brange':(10.,100.),
+            'bsig':24.0},
+ 'forest2':{'zrange':(1.5,zpivot),
+            'logNHrange':(14.5,17.2),
+            'gamma':3.5,
+            'beta':1.70,
+            'N0':0.33 * 1.1,
+            'brange':(10.,100.),
+            'bsig':24.0},
+ 'forest2_eor':{'zrange':(zpivot,10.1),
+            'logNHrange':(14.5,17.2),
+            'gamma':3.5,
+            'beta':1.70,
+            'N0':0.33 * 1.1,
+            'brange':(10.,100.),
+            'bsig':24.0},
+     'LLS':{'zrange':(1.5,10.1),
+            'logNHrange':(17.2,20.3),
+            'gamma':2.0,
+            'beta':1.3,
+            'N0':0.13 * 1.1,
+            'brange':(10.,100.),
+            'bsig':24.0},
+  'subDLA':{'zrange':(0.0,10.1),
+            'logNHrange':(20.3,21.0),
+            'N0':0.13 / 7.5 * 1.1,
+            'gamma':1.70,
+            'beta':1.28,
+            'brange':(10.,100.),
+            'bsig':24.0},
+     'DLA':{'zrange':(0.0,10.1),
+            'logNHrange':(21.0,22.0),
+            'N0':0.13 / 33 * 1.1,
+            'gamma':2.0,
+            'beta':1.40,
+            'brange':(10.,100.),
+            'bsig':24.0},
+}
+
+DYhiz_model = DoublePowerLaw_model.copy()
+DYhiz_model['forest1']['gamma'] = DYhiz_model['forest2']['gamma'] = 3.5
+DYhiz_model['forest1']['N0'] = 8.5 * 1.1
+DYhiz_model['forest2']['N0'] = 0.33 * 1.1
+
+DYhiz_model['forest1_eor']['gamma'] = DYhiz_model['forest2_eor']['gamma'] = 4.
+DYhiz_model['forest1_eor']['N0'] = 4
+DYhiz_model['forest2_eor']['N0'] = 0.2
+
+DYhiz_model['forest1']['N0'] = 8.5 * 1.05
+DYhiz_model['forest2']['N0'] = 0.33 * 1.05
+
 forestModels = {'Fan1999':Fan99_model,
                 'Worseck&Prochaska2011':WP11_model,
                 'McGreer+2013':McG13hiz_model}
